@@ -1,0 +1,11 @@
+{
+    "port": ":8081",
+    "enableGinConsoleLog": true,
+    "enableGinFileLog": true,
+    "database-name": "go-user-db",
+    "jwtSecretKey": "secret-key",
+    "jwtIssuer": "magistraapta",
+    "jwtExpireDuration": "1h",
+    "databaseUrl": "postgres://postgres:postgres@host.docker.internal:5432/go-user-db"
+
+}
