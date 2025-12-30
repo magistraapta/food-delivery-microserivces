@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.toml:/etc/traefik/traefik.toml:ro
+      - ./traefik/dynamic.toml:/etc/traefik/dynamic.toml:ro
+
+  # user-service:
+  #   build: ./services/user-service
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.user-service.rule=PathPrefix(`/`)"
+  #     - "traefik.http.services.user-service.loadbalancer.server.port=8081"
+
+  # food-service:
+  #   build: ./services/food-service
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.food-service.rule=PathPrefix(`/`)"
+  #     - "traefik.http.services.food-service.loadbalancer.server.port=8082"
+
+  # order-service:
+  #   build: ./services/order-service
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.order-service.rule=PathPrefix(`/orders`)"
+  #     - "traefik.http.services.order-service.loadbalancer.server.port=8080"

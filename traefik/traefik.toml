@@ -1,0 +1,19 @@
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+
+[api]
+  insecure = true
+  dashboard = true
+
+[providers.docker]
+  exposedByDefault = false
+
+[providers.file]
+  filename = "/etc/traefik/dynamic.toml"
+
+
+[http]
+  [http.middlewares]
+    [http.middlewares.strip-prefix.stripPrefix]
+      prefixes = ["/"]
