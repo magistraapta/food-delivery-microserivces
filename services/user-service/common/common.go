@@ -26,6 +26,7 @@ func LoadConfig() error {
 	file, err := os.Open("config/config.json")
 
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -34,6 +35,7 @@ func LoadConfig() error {
 	err = decoder.Decode(&config)
 
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
