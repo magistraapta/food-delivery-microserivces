@@ -27,7 +27,7 @@ func (us *UserService) CreateUser(user models.User) error {
 		return errors.New("username already exists")
 	}
 
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Error(err)
 		return err
 	}
