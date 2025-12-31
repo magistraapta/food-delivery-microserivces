@@ -11,8 +11,7 @@
 
 [providers.file]
   filename = "/etc/traefik/dynamic.toml"
-
-
+  
 [http]
   [http.middlewares]
     [http.middlewares.strip-prefix.stripPrefix]
