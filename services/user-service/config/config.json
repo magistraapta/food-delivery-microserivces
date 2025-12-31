@@ -6,6 +6,6 @@
     "jwtSecretKey": "secret-key",
     "jwtIssuer": "magistraapta",
     "jwtExpireDuration": "1h",
-    "databaseUrl": "postgres://postgres:postgres@host.docker.internal:5432/go-user-db"
+    "databaseUrl": "postgres://postgres:postgres@localhost:5432/go-user-db"
 
 }
