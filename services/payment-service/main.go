@@ -4,15 +4,13 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"order-service/client"
-	"order-service/config"
-	"order-service/controller"
-	"order-service/messaging"
-	"order-service/middleware"
-	"order-service/repository"
-	"order-service/service"
 	"os"
 	"os/signal"
+	"payment-service/config"
+	"payment-service/messaging"
+	"payment-service/repository"
+	"payment-service/service"
+	"payment-service/stripe"
 	"syscall"
 	"time"
 
@@ -47,52 +45,49 @@ func main() {
 	}
 	log.Println("RabbitMQ queues and exchanges setup complete")
 
+	// Initialize Stripe client
+	stripeClient := stripe.NewStripeClient()
+	log.Println("Stripe client initialized")
+
 	// Initialize repository and service
-	orderRepository := repository.NewOrderRepositoryImpl(db)
-	orderService := service.NewOrderServiceImpl(orderRepository, rabbitmqClient)
-	foodClient := client.NewFoodClientImpl()
-	orderController := controller.NewOrderController(orderService, foodClient)
+	paymentRepository := repository.NewPaymentRepository(db)
+	paymentService := service.NewPaymentService(paymentRepository, stripeClient, rabbitmqClient)
 
 	// Create context with cancellation for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Start consuming payment events from RabbitMQ
-	err = rabbitmqClient.ConsumePaymentEvents(
-		ctx,
-		orderService.ProcessPaymentSuccess,
-		orderService.ProcessPaymentFailed,
-	)
+	// Start consuming order.created events from RabbitMQ
+	err = rabbitmqClient.ConsumeOrderEvents(ctx, paymentService.ProcessOrderCreatedEvent)
 	if err != nil {
-		log.Fatalf("Failed to start payment events consumer: %v", err)
+		log.Fatalf("Failed to start order events consumer: %v", err)
 	}
-	log.Println("Started consuming payment events")
+	log.Println("Started consuming order.created events")
 
 	// Setup HTTP server with Gin
 	router := gin.Default()
 
-	// Order routes
-	router.POST("/orders", middleware.AuthMiddleware(), orderController.CreateOrder)
-	router.GET("/orders/:id", middleware.AuthMiddleware(), orderController.GetOrderById)
-
 	// Health check endpoint
-	router.GET("/health", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
 			"status":  "healthy",
-			"service": "order-service",
+			"service": "payment-service",
 			"time":    time.Now().Format(time.RFC3339),
 		})
 	})
 
+	// TODO: Add Stripe webhook endpoint for handling payment confirmations
+	// router.POST("/webhook/stripe", paymentHandler.HandleStripeWebhook)
+
 	// Create HTTP server
 	srv := &http.Server{
-		Addr:    ":8083",
+		Addr:    ":8084",
 		Handler: router,
 	}
 
 	// Start HTTP server in a goroutine
 	go func() {
-		log.Println("Order Service starting on port 8083...")
+		log.Println("Payment Service starting on port 8084...")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 		}
@@ -102,7 +97,7 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down Order Service...")
+	log.Println("Shutting down Payment Service...")
 
 	// Cancel context to stop consumers
 	cancel()
@@ -115,5 +110,5 @@ func main() {
 		log.Printf("Server forced to shutdown: %v", err)
 	}
 
-	log.Println("Order Service stopped")
+	log.Println("Payment Service stopped")
 }

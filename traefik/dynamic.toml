@@ -12,6 +12,10 @@
       rule = "PathPrefix(`/api/user`)"
       service = "user-service-local"
       middlewares = ["user-strip"]
+    [http.routers.payment-service-local]
+      rule = "PathPrefix(`/api/payment`)"
+      service = "payment-service-local"
+      middlewares = ["payment-strip"]
 
   [http.middlewares]
     [http.middlewares.food-strip.stripPrefix]
@@ -20,6 +24,8 @@
       prefixes = ["/api/user"]
     [http.middlewares.order-strip.stripPrefix]
       prefixes = ["/api/order"]
+    [http.middlewares.payment-strip.stripPrefix]
+      prefixes = ["/api/payment"]
 
   [http.services]
     [http.services.food-service-local]
@@ -34,3 +40,7 @@
       [http.services.order-service-local.loadBalancer]
         [[http.services.order-service-local.loadBalancer.servers]]
           url = "http://host.docker.internal:8083"
+    [http.services.payment-service-local]
+      [http.services.payment-service-local.loadBalancer]
+        [[http.services.payment-service-local.loadBalancer.servers]]
+          url = "http://host.docker.internal:8084"

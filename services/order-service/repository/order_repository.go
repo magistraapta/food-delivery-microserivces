@@ -10,6 +10,7 @@ import (
 type OrderRepository interface {
 	CreateOrder(order *models.Order) error
 	GetOrderById(id uuid.UUID) (*models.Order, error)
+	UpdateOrderStatus(id uuid.UUID, status string) error
 }
 
 type OrderRepositoryImpl struct {
@@ -32,4 +33,9 @@ func (r *OrderRepositoryImpl) GetOrderById(id uuid.UUID) (*models.Order, error) 
 	}
 
 	return &order, nil
+}
+
+// UpdateOrderStatus updates the status of an order
+func (r *OrderRepositoryImpl) UpdateOrderStatus(id uuid.UUID, status string) error {
+	return r.db.Model(&models.Order{}).Where("id = ?", id).Update("status", status).Error
 }
