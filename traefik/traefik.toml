@@ -10,7 +10,7 @@
   exposedByDefault = false
 
 [providers.file]
-  filename = "/etc/traefik/dynamic.toml"
+  filename = "/etc/traefik/dynamic-docker.toml"
   
 [http]
   [http.middlewares]
