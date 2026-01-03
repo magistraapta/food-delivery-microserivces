@@ -13,6 +13,8 @@ const (
 	READY_FOR_PICKUP = "READY_FOR_PICKUP"
 	OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY"
 	DELIVERED        = "DELIVERED"
+	CANCELLED        = "CANCELLED"      // Order cancelled (e.g., payment timeout)
+	PAYMENT_FAILED   = "PAYMENT_FAILED" // Payment explicitly failed
 )
 
 type Order struct {

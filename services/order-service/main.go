@@ -68,6 +68,14 @@ func main() {
 	}
 	log.Println("Started consuming payment events")
 
+	// Start consuming payment timeout events from RabbitMQ
+	// These events arrive after a 5-minute delay to check if payment was completed
+	err = rabbitmqClient.ConsumePaymentTimeoutEvents(ctx, orderService.ProcessPaymentTimeout)
+	if err != nil {
+		log.Fatalf("Failed to start payment timeout consumer: %v", err)
+	}
+	log.Println("Started consuming payment timeout events")
+
 	// Setup HTTP server with Gin
 	router := gin.Default()
 

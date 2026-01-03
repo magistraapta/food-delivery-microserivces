@@ -54,3 +54,10 @@ func (c *RabbitMQClient) PublishPaymentFailed(event events.PaymentFailedEvent) e
 	log.Printf("Publishing payment.failed event for OrderID: %s", event.OrderID)
 	return c.PublishToExchange(PaymentEventsExchange, PaymentFailedRoutingKey, event)
 }
+
+// PublishPaymentCheckoutCreated publishes a payment.checkout.created event
+// This event contains the Stripe Checkout URL for the order
+func (c *RabbitMQClient) PublishPaymentCheckoutCreated(event events.PaymentCheckoutCreatedEvent) error {
+	log.Printf("Publishing payment.checkout.created event for OrderID: %s, URL: %s", event.OrderID, event.CheckoutURL)
+	return c.PublishToExchange(PaymentEventsExchange, PaymentCheckoutCreatedRoutingKey, event)
+}

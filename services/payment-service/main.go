@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"payment-service/config"
+	"payment-service/controller"
 	"payment-service/messaging"
 	"payment-service/repository"
 	"payment-service/service"
@@ -49,9 +50,10 @@ func main() {
 	stripeClient := stripe.NewStripeClient()
 	log.Println("Stripe client initialized")
 
-	// Initialize repository and service
+	// Initialize repository, service, and controller
 	paymentRepository := repository.NewPaymentRepository(db)
 	paymentService := service.NewPaymentService(paymentRepository, stripeClient, rabbitmqClient)
+	paymentController := controller.NewPaymentController(paymentService)
 
 	// Create context with cancellation for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -76,8 +78,12 @@ func main() {
 		})
 	})
 
-	// TODO: Add Stripe webhook endpoint for handling payment confirmations
-	// router.POST("/webhook/stripe", paymentHandler.HandleStripeWebhook)
+	// Payment API endpoints
+	router.GET("/checkout/:orderId", paymentController.GetCheckoutURL)
+	router.GET("/status/:orderId", paymentController.GetPaymentStatus)
+
+	// Stripe webhook endpoint
+	router.POST("/webhook/stripe", paymentController.HandleStripeWebhook)
 
 	// Create HTTP server
 	srv := &http.Server{

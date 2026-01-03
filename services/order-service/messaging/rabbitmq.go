@@ -16,10 +16,18 @@ const (
 	PaymentSuccessQueue = "order.payment.success" // Order service's queue for payment.success events
 	PaymentFailedQueue  = "order.payment.failed"  // Order service's queue for payment.failed events
 
+	// Delayed/Timeout Queues (Dead Letter Exchange pattern)
+	PaymentTimeoutDelayQueue = "order.payment.timeout.delay" // Messages wait here for 5 minutes
+	PaymentTimeoutQueue      = "order.payment.timeout"       // Messages arrive here after timeout
+
 	// Routing Keys
 	OrderCreatedRoutingKey   = "order.created"
 	PaymentSuccessRoutingKey = "payment.success"
 	PaymentFailedRoutingKey  = "payment.failed"
+	PaymentTimeoutRoutingKey = "payment.timeout"
+
+	// Timeout duration (5 minutes in milliseconds)
+	PaymentTimeoutMs = 5 * 60 * 1000 // 5 minutes = 300,000 ms
 )
 
 type RabbitMQClient struct {
@@ -138,6 +146,55 @@ func (c *RabbitMQClient) SetupQueuesAndExchanges() error {
 		return err
 	}
 	log.Printf("Bound queue %s to exchange %s with routing key %s", PaymentFailedQueue, PaymentEventsExchange, PaymentFailedRoutingKey)
+
+	// Setup delayed queue for payment timeout (Dead Letter Exchange pattern)
+	// Step 1: Declare the final timeout queue (where messages go after delay)
+	_, err = c.Channel.QueueDeclare(
+		PaymentTimeoutQueue, // name
+		true,                // durable
+		false,               // delete when unused
+		false,               // exclusive
+		false,               // no-wait
+		nil,                 // arguments
+	)
+	if err != nil {
+		return err
+	}
+	log.Printf("Declared queue: %s", PaymentTimeoutQueue)
+
+	// Step 2: Bind timeout queue to order events exchange
+	err = c.Channel.QueueBind(
+		PaymentTimeoutQueue,      // queue name
+		PaymentTimeoutRoutingKey, // routing key
+		OrderEventsExchange,      // exchange
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+	log.Printf("Bound queue %s to exchange %s with routing key %s", PaymentTimeoutQueue, OrderEventsExchange, PaymentTimeoutRoutingKey)
+
+	// Step 3: Declare the delay queue with Dead Letter Exchange (DLX) settings
+	// Messages in this queue expire after PaymentTimeoutMs and are routed to the timeout queue
+	delayQueueArgs := amqp.Table{
+		"x-dead-letter-exchange":    OrderEventsExchange,      // Route expired messages to this exchange
+		"x-dead-letter-routing-key": PaymentTimeoutRoutingKey, // With this routing key
+		"x-message-ttl":             int32(PaymentTimeoutMs),  // 5 minutes TTL
+	}
+
+	_, err = c.Channel.QueueDeclare(
+		PaymentTimeoutDelayQueue, // name
+		true,                     // durable
+		false,                    // delete when unused
+		false,                    // exclusive
+		false,                    // no-wait
+		delayQueueArgs,           // arguments with DLX config
+	)
+	if err != nil {
+		return err
+	}
+	log.Printf("Declared delay queue: %s with TTL %dms", PaymentTimeoutDelayQueue, PaymentTimeoutMs)
 
 	return nil
 }

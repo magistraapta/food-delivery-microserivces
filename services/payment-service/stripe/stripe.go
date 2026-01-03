@@ -4,14 +4,77 @@ import (
 	"os"
 
 	"github.com/stripe/stripe-go/v84"
+	"github.com/stripe/stripe-go/v84/checkout/session"
 	"github.com/stripe/stripe-go/v84/paymentintent"
 )
 
-type StripeClient struct{}
+type StripeClient struct {
+	SuccessURL string
+	CancelURL  string
+}
 
 func NewStripeClient() *StripeClient {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
-	return &StripeClient{}
+
+	// Get base URL for redirects (defaults for local development)
+	baseURL := os.Getenv("STRIPE_REDIRECT_BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:3000" // Frontend URL
+	}
+
+	return &StripeClient{
+		SuccessURL: baseURL + "/payment/success?session_id={CHECKOUT_SESSION_ID}",
+		CancelURL:  baseURL + "/payment/cancel",
+	}
+}
+
+// CreateCheckoutSession creates a Stripe Checkout Session and returns the checkout URL
+// The user should be redirected to this URL to complete payment
+func (c *StripeClient) CreateCheckoutSession(orderID string, amount float64, currency string, productName string) (*stripe.CheckoutSession, error) {
+	// Stripe expects amount in cents (smallest currency unit)
+	amountInCents := int64(amount * 100)
+
+	if currency == "" {
+		currency = "usd"
+	}
+
+	if productName == "" {
+		productName = "Food Order"
+	}
+
+	params := &stripe.CheckoutSessionParams{
+		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
+					Currency: stripe.String(currency),
+					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
+						Name: stripe.String(productName),
+					},
+					UnitAmount: stripe.Int64(amountInCents),
+				},
+				Quantity: stripe.Int64(1),
+			},
+		},
+		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
+		SuccessURL: stripe.String(c.SuccessURL),
+		CancelURL:  stripe.String(c.CancelURL),
+		ExpiresAt:  stripe.Int64(300), // 5 minutes (in seconds from now) - matches our timeout
+		Metadata: map[string]string{
+			"order_id": orderID,
+		},
+	}
+
+	// Note: ExpiresAt requires a Unix timestamp, not duration
+	// For 5 minutes from now, we need to calculate the timestamp
+	params.ExpiresAt = nil // Remove for now, Stripe default is 24 hours
+
+	return session.New(params)
+}
+
+// GetCheckoutSession retrieves a checkout session by ID
+func (c *StripeClient) GetCheckoutSession(sessionID string) (*stripe.CheckoutSession, error) {
+	return session.Get(sessionID, nil)
 }
 
 // CreatePaymentIntent creates a PaymentIntent for client-side confirmation

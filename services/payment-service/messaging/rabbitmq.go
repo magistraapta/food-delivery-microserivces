@@ -18,9 +18,10 @@ const (
 	PaymentFailedQueue  = "payment.failed"
 
 	// Routing Keys
-	OrderCreatedRoutingKey   = "order.created"
-	PaymentSuccessRoutingKey = "payment.success"
-	PaymentFailedRoutingKey  = "payment.failed"
+	OrderCreatedRoutingKey           = "order.created"
+	PaymentSuccessRoutingKey         = "payment.success"
+	PaymentFailedRoutingKey          = "payment.failed"
+	PaymentCheckoutCreatedRoutingKey = "payment.checkout.created"
 )
 
 type RabbitMQClient struct {
