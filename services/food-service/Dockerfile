@@ -49,10 +49,10 @@ FROM alpine:latest AS final
 # Leverage a cache mount to /var/cache/apk/ to speed up subsequent builds.
 RUN --mount=type=cache,target=/var/cache/apk \
     apk --update add \
-        ca-certificates \
-        tzdata \
-        && \
-        update-ca-certificates
+    ca-certificates \
+    tzdata \
+    && \
+    update-ca-certificates
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
@@ -65,10 +65,16 @@ RUN adduser \
     --no-create-home \
     --uid "${UID}" \
     appuser
-USER appuser
 
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/server /bin/
+
+# Copy the .env.docker file and set working directory (before switching user)
+COPY .env.docker /app/.env.docker
+WORKDIR /app
+
+# Switch to non-root user
+USER appuser
 
 # Expose the port that the application listens on.
 EXPOSE 8082
