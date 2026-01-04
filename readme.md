@@ -6,14 +6,6 @@ a microservice architecture for food delivery system built with Go.
 
 ![Architecture](./architecture-diagram.png)
 
-## Services
-
-- Api Gateway [8080]
-- User Service [8081]
-- Order Service [8082]
-- Payment Service [8084]
-- Food Service [8083]
-
 ## Features
 
 - User Service
@@ -60,91 +52,162 @@ Each service is using layered architecture that contains repository, service, an
 - Docker & Docker Compose
 - PostgreSQL (for local development)
 
-### Running with Docker Compose
+### Quick Start with Makefile
 
-1. **Clone the repository**
+This project includes a comprehensive Makefile for easy development. Run `make help` to see all available commands:
 
-   ```bash
-   git clone <repository-url>
-   cd food-delivery
-   ```
+```bash
+make help
+```
 
-2. **Start all services**
+#### 1. Clone and Setup
 
-   ```bash
-   docker compose up --build -d
-   ```
+```bash
+git clone <repository-url>
+cd food-delivery
+```
 
-3. **Check running containers**
+#### 2. Configure Environment
 
-   ```bash
-   docker compose ps
-   ```
+Copy `.env.example` to `.env` in each service directory and update values as needed:
 
-4. **View logs**
+```bash
+cp services/user-service/.env.example services/user-service/.env
+cp services/food-service/.env.example services/food-service/.env
+cp services/order-service/.env.example services/order-service/.env
+cp services/payment-service/.env.example services/payment-service/.env
+```
 
-   ```bash
-   docker compose logs -f
-   ```
+#### 3. Create Databases
 
-5. **Stop all services**
-   ```bash
-   docker compose down
-   ```
+Start PostgreSQL and create the required databases:
 
-> **Note:** The services connect to PostgreSQL running on your local machine via `host.docker.internal`. Make sure PostgreSQL is running locally on port 5432.
+```sql
+CREATE DATABASE "food-service-db";
+CREATE DATABASE "user-service-db";
+CREATE DATABASE "order-service-db";
+CREATE DATABASE "payment-service-db";
+```
 
-### Running Locally (Without Docker)
+---
 
-1. **Start PostgreSQL** on port 5432
+### Running with Docker Compose (Recommended)
 
-2. **Create databases** for each service:
+The easiest way to run all services:
 
-   ```sql
-   CREATE DATABASE "food-service-db";
-   CREATE DATABASE "user-service-db";
-   CREATE DATABASE "order-service-db";
-   CREATE DATABASE "payment-service-db";
-   ```
+```bash
+# Start all services (including RabbitMQ and Traefik)
+make docker-up
 
-3. **Start RabbitMQ**
+# View logs
+make logs
 
-   ```bash
-   docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
-   ```
+# Stop all services
+make docker-down
+```
 
-4. **Configure environment files** for each service:
+**Access Points:**
 
-   - Copy `.env.example` to `.env` in each service directory
-   - Update the database connection strings if needed
+- RabbitMQ Management: http://localhost:15672 (guest/guest)
+- Traefik Dashboard: http://localhost:8080
 
-5. **Run each service** (in separate terminals):
+---
 
-   ```bash
-   # User Service (port 8081)
-   cd services/user-service
-   go run .
+### Running Locally (Development Mode)
 
-   # Food Service (port 8082)
-   cd services/food-service
-   go run .
+For local development with hot-reload capability:
 
-   # Order Service (port 8083)
-   cd services/order-service
-   go run .
+#### Option 1: Run All Services Together
 
-   # Payment Service (port 8084)
-   cd services/payment-service
-   go run .
-   ```
+```bash
+# Start infrastructure (RabbitMQ, Traefik)
+make infra
 
-6. **Start Traefik** (optional, for API Gateway):
-   ```bash
-   docker run -d -p 80:80 -p 8080:8080 \
-     -v $(pwd)/traefik/traefik.toml:/etc/traefik/traefik.toml:ro \
-     -v $(pwd)/traefik/dynamic.toml:/etc/traefik/dynamic-docker.toml:ro \
-     traefik:v2.10
-   ```
+# Run all services concurrently
+make run-all
+```
+
+Press `Ctrl+C` to stop all services.
+
+#### Option 2: Run Services Individually
+
+```bash
+# Start infrastructure first
+make infra
+
+# Run individual services (each in separate terminal)
+make run-user      # User Service    → http://localhost:8081
+make run-food      # Food Service    → http://localhost:8082
+make run-order     # Order Service   → http://localhost:8083
+make run-payment   # Payment Service → http://localhost:8084
+```
+
+---
+
+### Build & Test Commands
+
+```bash
+# Build all services
+make build-all
+
+# Build individual service
+make build-user
+make build-food
+make build-order
+make build-payment
+
+# Run all tests
+make test-all
+
+# Test individual service
+make test-user
+make test-food
+make test-order
+make test-payment
+```
+
+---
+
+### Utility Commands
+
+```bash
+# Install/update dependencies
+make deps
+
+# Format code
+make fmt
+
+# Run linter (requires golangci-lint)
+make lint
+
+# Clean build artifacts
+make clean
+```
+
+---
+
+### Makefile Commands Reference
+
+| Command             | Description                              |
+| ------------------- | ---------------------------------------- |
+| `make help`         | Show all available commands              |
+| `make infra`        | Start infrastructure (RabbitMQ, Traefik) |
+| `make infra-down`   | Stop infrastructure                      |
+| `make run-all`      | Run all services concurrently            |
+| `make run-user`     | Run user-service (port 8081)             |
+| `make run-food`     | Run food-service (port 8082)             |
+| `make run-order`    | Run order-service (port 8083)            |
+| `make run-payment`  | Run payment-service (port 8084)          |
+| `make build-all`    | Build all services                       |
+| `make test-all`     | Test all services                        |
+| `make docker-up`    | Start all services with Docker Compose   |
+| `make docker-down`  | Stop all Docker services                 |
+| `make docker-build` | Build all Docker images                  |
+| `make logs`         | View Docker logs                         |
+| `make deps`         | Install dependencies for all services    |
+| `make fmt`          | Format code in all services              |
+| `make lint`         | Run linter on all services               |
+| `make clean`        | Clean build artifacts                    |
 
 ## API Endpoints
 
@@ -205,6 +268,7 @@ If payment is not completed within **5 minutes**, the order is automatically can
 - [ ] Setup Integration test
 - [ ] Setup Kubernetes
 - [ ] Setup CI/CD
+- [ ] Setup S3 from minio
 
 ## Contact
 
