@@ -2,8 +2,8 @@ package utils
 
 import (
 	"errors"
+	"os"
 	"time"
-	"user-service/common"
 	"user-service/models"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -18,7 +18,7 @@ func GenerateToken(user models.User) (string, error) {
 			"exp":      time.Now().Add(time.Hour * 24).Unix(),
 		})
 
-	tokenString, err := token.SignedString([]byte(common.ConfigData.JwtSecretKey))
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 
 	if err != nil {
 		return "", err
@@ -29,7 +29,7 @@ func GenerateToken(user models.User) (string, error) {
 
 func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(common.ConfigData.JwtSecretKey), nil
+		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 	})
 
 	if err != nil {
