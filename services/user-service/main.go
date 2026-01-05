@@ -3,7 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
-	"user-service/common"
+	"os"
+	"user-service/config"
 	"user-service/controller"
 	"user-service/database"
 	"user-service/middleware"
@@ -13,30 +14,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Main struct {
-	router *gin.Engine
-}
-
-func (m *Main) InitServer() error {
-	err := common.LoadConfig()
-	if err != nil {
-		return err
-	}
-
-	m.router = gin.Default()
-
-	return nil
-}
-
 func main() {
-	main := Main{}
 
-	if err := main.InitServer(); err != nil {
-		log.Fatal("Failed to init server: ", err)
+	err := config.LoadEnv()
+
+	if err != nil {
+		log.Fatal("Failed to load config: ", err)
 		return
 	}
 
-	database, err := database.ConnectDatabase(common.ConfigData)
+	database, err := database.ConnectDatabase()
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
 		return
@@ -46,7 +33,9 @@ func main() {
 	userService := service.NewUserService(userRepository)
 	userController := controller.NewUserController(userService)
 
-	v1 := main.router.Group("/v1")
+	router := gin.Default()
+
+	v1 := router.Group("/v1")
 	{
 		admin := v1.Group("/admin")
 		{
@@ -66,10 +55,12 @@ func main() {
 		}
 	}
 
-	main.router.GET("/health", func(c *gin.Context) {
+	log.Println("User Service is running at", os.Getenv("PORT"))
+
+	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})
 
-	main.router.Run(common.ConfigData.Port)
+	router.Run(os.Getenv("PORT"))
 
 }

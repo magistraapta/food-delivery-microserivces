@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   traefik:
     image: traefik:v2.10
@@ -9,25 +7,56 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.toml:/etc/traefik/traefik.toml:ro
-      - ./traefik/dynamic.toml:/etc/traefik/dynamic.toml:ro
+      - ./traefik/dynamic-docker.toml:/etc/traefik/dynamic-docker.toml:ro
 
-  # user-service:
-  #   build: ./services/user-service
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.user-service.rule=PathPrefix(`/`)"
-  #     - "traefik.http.services.user-service.loadbalancer.server.port=8081"
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - ./rabbitmq/data:/var/lib/rabbitmq
+      - ./rabbitmq/log:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-  # food-service:
-  #   build: ./services/food-service
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.food-service.rule=PathPrefix(`/`)"
-  #     - "traefik.http.services.food-service.loadbalancer.server.port=8082"
+  user-service:
+    build: ./services/user-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-service.rule=PathPrefix(`/`)"
+      - "traefik.http.services.user-service.loadbalancer.server.port=8081"
 
-  # order-service:
-  #   build: ./services/order-service
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.order-service.rule=PathPrefix(`/orders`)"
-  #     - "traefik.http.services.order-service.loadbalancer.server.port=8080"
+  food-service:
+    build: ./services/food-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.food-service.rule=PathPrefix(`/`)"
+      - "traefik.http.services.food-service.loadbalancer.server.port=8082"
+
+  order-service:
+    build: ./services/order-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.order-service.rule=PathPrefix(`/orders`)"
+      - "traefik.http.services.order-service.loadbalancer.server.port=8080"
+  
+  payment-service:
+    build: ./services/payment-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.payment-service.rule=PathPrefix(`/payments`)"
+      - "traefik.http.services.payment-service.loadbalancer.server.port=8084"

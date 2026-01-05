@@ -1,21 +1,14 @@
 package utils
 
 import (
+	"os"
 	"testing"
 	"time"
-	"user-service/common"
 	"user-service/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
-
-func init() {
-	// Initialize config for tests
-	common.ConfigData = &common.Config{
-		JwtSecretKey: "test-secret-key-for-testing",
-	}
-}
 
 func TestGenerateToken(t *testing.T) {
 	user := models.User{
@@ -107,7 +100,7 @@ func TestValidateToken_ExpiredToken(t *testing.T) {
 			"exp":      time.Now().Add(-time.Hour).Unix(), // Expired 1 hour ago
 		})
 
-	tokenString, _ := token.SignedString([]byte(common.ConfigData.JwtSecretKey))
+	tokenString, _ := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 
 	_, err := ValidateToken(tokenString)
 	if err == nil {

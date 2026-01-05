@@ -2,13 +2,14 @@ package config
 
 import (
 	"food-service/models"
+	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func LoadDatabase() (*gorm.DB, error) {
-	dbUrl := "postgres://postgres:postgres@localhost:5432/food-service-db?sslmode=disable"
+	dbUrl := os.Getenv("DB_URL")
 
 	db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
 

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service: [food-service, order-service, payment-service, user-service]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Install dependencies
+        working-directory: ./services/${{ matrix.service }}
+        run: go mod download
+
+      - name: Build
+        working-directory: ./services/${{ matrix.service }}
+        run: go build -v ./...
+
+      - name: Run tests
+        working-directory: ./services/${{ matrix.service }}
+        run: go test -v ./...

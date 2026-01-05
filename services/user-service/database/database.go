@@ -1,15 +1,15 @@
 package database
 
 import (
-	"user-service/common"
+	"os"
 	"user-service/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func ConnectDatabase(config *common.Config) (*gorm.DB, error) {
-	dbUrl := config.DatabaseUrl
+func ConnectDatabase() (*gorm.DB, error) {
+	dbUrl := os.Getenv("DB_URL")
 
 	db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
 

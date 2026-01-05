@@ -6,6 +6,7 @@ import (
 	"user-service/repository"
 	"user-service/utils"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -18,22 +19,27 @@ func NewUserService(userRepository repository.UserRepository) UserService {
 }
 
 func (us *UserService) CreateUser(user models.User) error {
+	log.Info("Creating user")
 	_, err := us.userRepository.GetUserByUsername(user.Username)
 
 	if err == nil {
+		log.Error("username already exists")
 		return errors.New("username already exists")
 	}
 
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Error(err)
 		return err
 	}
 
 	user.Password = utils.GeneratePassword(user.Password)
 	user.Role = "user"
 
+	log.Info("User created successfully")
 	return us.userRepository.CreateUser(user)
 }
 
 func (us *UserService) GetUserByUsername(username string) (models.User, error) {
+	log.Info("Getting user by username")
 	return us.userRepository.GetUserByUsername(username)
 }
