@@ -21,10 +21,10 @@ type OrderService interface {
 
 type OrderServiceImpl struct {
 	orderRepository repository.OrderRepository
-	rabbitMQClient  *messaging.RabbitMQClient
+	rabbitMQClient  messaging.RabbitmqClient
 }
 
-func NewOrderServiceImpl(orderRepository repository.OrderRepository, rabbitMQClient *messaging.RabbitMQClient) OrderService {
+func NewOrderServiceImpl(orderRepository repository.OrderRepository, rabbitMQClient messaging.RabbitmqClient) OrderService {
 	return &OrderServiceImpl{
 		orderRepository: orderRepository,
 		rabbitMQClient:  rabbitMQClient,

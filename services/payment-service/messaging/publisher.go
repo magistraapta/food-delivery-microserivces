@@ -11,7 +11,7 @@ import (
 )
 
 // PublishToExchange publishes an event to an exchange with a routing key
-func (c *RabbitMQClient) PublishToExchange(exchange, routingKey string, event interface{}) error {
+func (c *RabbitmqClientImpl) PublishToExchange(exchange, routingKey string, event interface{}) error {
 	body, err := json.Marshal(event)
 	if err != nil {
 		return err
@@ -43,21 +43,21 @@ func (c *RabbitMQClient) PublishToExchange(exchange, routingKey string, event in
 
 // PublishPaymentSuccess publishes a payment.success event to the payment events exchange
 // This event is consumed by Order Service to update the order status
-func (c *RabbitMQClient) PublishPaymentSuccess(event events.PaymentSuccessEvent) error {
+func (c *RabbitmqClientImpl) PublishPaymentSuccess(event events.PaymentSuccessEvent) error {
 	log.Printf("Publishing payment.success event for OrderID: %s", event.OrderID)
 	return c.PublishToExchange(PaymentEventsExchange, PaymentSuccessRoutingKey, event)
 }
 
 // PublishPaymentFailed publishes a payment.failed event to the payment events exchange
 // This event is consumed by Order Service to update the order status
-func (c *RabbitMQClient) PublishPaymentFailed(event events.PaymentFailedEvent) error {
+func (c *RabbitmqClientImpl) PublishPaymentFailed(event events.PaymentFailedEvent) error {
 	log.Printf("Publishing payment.failed event for OrderID: %s", event.OrderID)
 	return c.PublishToExchange(PaymentEventsExchange, PaymentFailedRoutingKey, event)
 }
 
 // PublishPaymentCheckoutCreated publishes a payment.checkout.created event
 // This event contains the Stripe Checkout URL for the order
-func (c *RabbitMQClient) PublishPaymentCheckoutCreated(event events.PaymentCheckoutCreatedEvent) error {
+func (c *RabbitmqClientImpl) PublishPaymentCheckoutCreated(event events.PaymentCheckoutCreatedEvent) error {
 	log.Printf("Publishing payment.checkout.created event for OrderID: %s, URL: %s", event.OrderID, event.CheckoutURL)
 	return c.PublishToExchange(PaymentEventsExchange, PaymentCheckoutCreatedRoutingKey, event)
 }

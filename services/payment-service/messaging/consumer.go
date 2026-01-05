@@ -14,7 +14,7 @@ type OrderEventHandler func(event events.OrderCreatedEvent) error
 
 // ConsumeOrderEvents starts consuming order.created events from RabbitMQ
 // The handler function is called for each received event
-func (c *RabbitMQClient) ConsumeOrderEvents(ctx context.Context, handler OrderEventHandler) error {
+func (c *RabbitmqClientImpl) ConsumeOrderEvents(ctx context.Context, handler OrderEventHandler) error {
 	// Set QoS (Quality of Service) - process one message at a time
 	err := c.Channel.Qos(
 		1,     // prefetch count
@@ -61,7 +61,7 @@ func (c *RabbitMQClient) ConsumeOrderEvents(ctx context.Context, handler OrderEv
 }
 
 // processOrderMessage handles a single order.created message
-func (c *RabbitMQClient) processOrderMessage(msg amqp.Delivery, handler OrderEventHandler) {
+func (c *RabbitmqClientImpl) processOrderMessage(msg amqp.Delivery, handler OrderEventHandler) {
 	log.Printf("Received message from queue: %s", OrderCreatedQueue)
 
 	var event events.OrderCreatedEvent

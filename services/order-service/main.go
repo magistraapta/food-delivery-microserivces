@@ -34,7 +34,7 @@ func main() {
 	log.Println("Connected to database")
 
 	// Initialize RabbitMQ client
-	rabbitmqClient, err := messaging.NewRabbitMQClient()
+	rabbitmqClient, err := messaging.NewRabbitmqClientImpl()
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
 	}

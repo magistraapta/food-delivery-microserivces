@@ -11,7 +11,7 @@ import (
 )
 
 // PublishToExchange publishes an event to an exchange with a routing key
-func (c *RabbitMQClient) PublishToExchange(exchange, routingKey string, evt interface{}) error {
+func (c *RabbitmqClientImpl) PublishToExchange(exchange, routingKey string, evt interface{}) error {
 	body, err := json.Marshal(evt)
 	if err != nil {
 		return err
@@ -43,14 +43,14 @@ func (c *RabbitMQClient) PublishToExchange(exchange, routingKey string, evt inte
 
 // PublishOrderCreated publishes an order.created event to the order events exchange
 // This event is consumed by Payment Service to initiate payment processing
-func (c *RabbitMQClient) PublishOrderCreated(evt event.OrderCreatedEvent) error {
+func (c *RabbitmqClientImpl) PublishOrderCreated(evt event.OrderCreatedEvent) error {
 	log.Printf("Publishing order.created event for OrderID: %s", evt.OrderID)
 	return c.PublishToExchange(OrderEventsExchange, OrderCreatedRoutingKey, evt)
 }
 
 // PublishToQueue publishes a message directly to a queue (not via exchange)
 // Used for delayed queue messages
-func (c *RabbitMQClient) PublishToQueue(queueName string, evt interface{}) error {
+func (c *RabbitmqClientImpl) PublishToQueue(queueName string, evt interface{}) error {
 	body, err := json.Marshal(evt)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func (c *RabbitMQClient) PublishToQueue(queueName string, evt interface{}) error
 
 // PublishPaymentTimeout publishes a timeout event to the delay queue
 // The message will wait in the delay queue for 5 minutes, then be routed to the timeout queue
-func (c *RabbitMQClient) PublishPaymentTimeout(evt event.PaymentTimeoutEvent) error {
+func (c *RabbitmqClientImpl) PublishPaymentTimeout(evt event.PaymentTimeoutEvent) error {
 	log.Printf("Scheduling payment timeout for OrderID: %s (will check in 5 minutes)", evt.OrderID)
 	return c.PublishToQueue(PaymentTimeoutDelayQueue, evt)
 }

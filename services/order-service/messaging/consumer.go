@@ -16,7 +16,7 @@ type PaymentSuccessHandler func(event event.PaymentSuccessEvent) error
 type PaymentFailedHandler func(event event.PaymentFailedEvent) error
 
 // ConsumePaymentEvents starts consuming both payment.success and payment.failed events from RabbitMQ
-func (c *RabbitMQClient) ConsumePaymentEvents(
+func (c *RabbitmqClientImpl) ConsumePaymentEvents(
 	ctx context.Context,
 	successHandler PaymentSuccessHandler,
 	failedHandler PaymentFailedHandler,
@@ -88,7 +88,7 @@ func (c *RabbitMQClient) ConsumePaymentEvents(
 }
 
 // processPaymentSuccessMessage handles a single payment.success message
-func (c *RabbitMQClient) processPaymentSuccessMessage(msg amqp.Delivery, handler PaymentSuccessHandler) {
+func (c *RabbitmqClientImpl) processPaymentSuccessMessage(msg amqp.Delivery, handler PaymentSuccessHandler) {
 	log.Printf("Received payment.success message")
 
 	var evt event.PaymentSuccessEvent
@@ -119,7 +119,7 @@ func (c *RabbitMQClient) processPaymentSuccessMessage(msg amqp.Delivery, handler
 }
 
 // processPaymentFailedMessage handles a single payment.failed message
-func (c *RabbitMQClient) processPaymentFailedMessage(msg amqp.Delivery, handler PaymentFailedHandler) {
+func (c *RabbitmqClientImpl) processPaymentFailedMessage(msg amqp.Delivery, handler PaymentFailedHandler) {
 	log.Printf("Received payment.failed message")
 
 	var evt event.PaymentFailedEvent
@@ -154,7 +154,7 @@ type PaymentTimeoutHandler func(event event.PaymentTimeoutEvent) error
 
 // ConsumePaymentTimeoutEvents starts consuming payment timeout events from RabbitMQ
 // These events arrive after a 5-minute delay to check if payment was completed
-func (c *RabbitMQClient) ConsumePaymentTimeoutEvents(ctx context.Context, handler PaymentTimeoutHandler) error {
+func (c *RabbitmqClientImpl) ConsumePaymentTimeoutEvents(ctx context.Context, handler PaymentTimeoutHandler) error {
 	// Start consuming payment.timeout events
 	timeoutMsgs, err := c.Channel.Consume(
 		PaymentTimeoutQueue,     // queue (the final queue, not the delay queue)
@@ -191,7 +191,7 @@ func (c *RabbitMQClient) ConsumePaymentTimeoutEvents(ctx context.Context, handle
 }
 
 // processPaymentTimeoutMessage handles a single payment timeout message
-func (c *RabbitMQClient) processPaymentTimeoutMessage(msg amqp.Delivery, handler PaymentTimeoutHandler) {
+func (c *RabbitmqClientImpl) processPaymentTimeoutMessage(msg amqp.Delivery, handler PaymentTimeoutHandler) {
 	log.Printf("Received payment.timeout message (5 minutes elapsed)")
 
 	var evt event.PaymentTimeoutEvent

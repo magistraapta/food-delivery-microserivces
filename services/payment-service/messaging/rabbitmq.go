@@ -3,6 +3,7 @@ package messaging
 import (
 	"log"
 	"os"
+	"payment-service/messaging/events"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -24,12 +25,18 @@ const (
 	PaymentCheckoutCreatedRoutingKey = "payment.checkout.created"
 )
 
-type RabbitMQClient struct {
+type RabbitmqClient interface {
+	PublishPaymentSuccess(event events.PaymentSuccessEvent) error
+	PublishPaymentFailed(event events.PaymentFailedEvent) error
+	PublishPaymentCheckoutCreated(event events.PaymentCheckoutCreatedEvent) error
+}
+
+type RabbitmqClientImpl struct {
 	Conn    *amqp.Connection
 	Channel *amqp.Channel
 }
 
-func NewRabbitMQClient() (*RabbitMQClient, error) {
+func NewRabbitMQClient() (*RabbitmqClientImpl, error) {
 	// Get RabbitMQ URL from environment variable, fallback to default
 	rabbitmqURL := os.Getenv("RABBITMQ_URL")
 	if rabbitmqURL == "" {
@@ -47,7 +54,7 @@ func NewRabbitMQClient() (*RabbitMQClient, error) {
 		return nil, err
 	}
 
-	client := &RabbitMQClient{
+	client := &RabbitmqClientImpl{
 		Conn:    conn,
 		Channel: channel,
 	}
@@ -56,7 +63,7 @@ func NewRabbitMQClient() (*RabbitMQClient, error) {
 }
 
 // SetupQueuesAndExchanges declares all necessary exchanges and queues for payment service
-func (c *RabbitMQClient) SetupQueuesAndExchanges() error {
+func (c *RabbitmqClientImpl) SetupQueuesAndExchanges() error {
 	// Declare order events exchange (published by order-service, consumed by payment-service)
 	err := c.Channel.ExchangeDeclare(
 		OrderEventsExchange, // name
@@ -118,7 +125,7 @@ func (c *RabbitMQClient) SetupQueuesAndExchanges() error {
 }
 
 // Close closes the RabbitMQ connection and channel
-func (c *RabbitMQClient) Close() {
+func (c *RabbitmqClientImpl) Close() {
 	if c.Channel != nil {
 		c.Channel.Close()
 		log.Println("RabbitMQ channel closed")

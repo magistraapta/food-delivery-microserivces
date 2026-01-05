@@ -8,12 +8,21 @@ import (
 	"github.com/stripe/stripe-go/v84/paymentintent"
 )
 
-type StripeClient struct {
+type StripeClient interface {
+	CreateCheckoutSession(orderID string, amount float64, currency string, productName string) (*stripe.CheckoutSession, error)
+	GetCheckoutSession(sessionID string) (*stripe.CheckoutSession, error)
+	CreatePaymentIntent(orderID string, amount float64, currency string) (*stripe.PaymentIntent, error)
+	ConfirmPaymentIntent(paymentIntentID string, paymentMethodID string) (*stripe.PaymentIntent, error)
+	GetPaymentIntent(paymentIntentID string) (*stripe.PaymentIntent, error)
+	CreateAndConfirmPaymentIntent(orderID string, amount float64, currency string, paymentMethodID string) (*stripe.PaymentIntent, error)
+}
+
+type StripeClientImpl struct {
 	SuccessURL string
 	CancelURL  string
 }
 
-func NewStripeClient() *StripeClient {
+func NewStripeClient() *StripeClientImpl {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 
 	// Get base URL for redirects (defaults for local development)
@@ -22,7 +31,7 @@ func NewStripeClient() *StripeClient {
 		baseURL = "http://localhost:3000" // Frontend URL
 	}
 
-	return &StripeClient{
+	return &StripeClientImpl{
 		SuccessURL: baseURL + "/payment/success?session_id={CHECKOUT_SESSION_ID}",
 		CancelURL:  baseURL + "/payment/cancel",
 	}
@@ -30,7 +39,7 @@ func NewStripeClient() *StripeClient {
 
 // CreateCheckoutSession creates a Stripe Checkout Session and returns the checkout URL
 // The user should be redirected to this URL to complete payment
-func (c *StripeClient) CreateCheckoutSession(orderID string, amount float64, currency string, productName string) (*stripe.CheckoutSession, error) {
+func (c *StripeClientImpl) CreateCheckoutSession(orderID string, amount float64, currency string, productName string) (*stripe.CheckoutSession, error) {
 	// Stripe expects amount in cents (smallest currency unit)
 	amountInCents := int64(amount * 100)
 
@@ -73,13 +82,13 @@ func (c *StripeClient) CreateCheckoutSession(orderID string, amount float64, cur
 }
 
 // GetCheckoutSession retrieves a checkout session by ID
-func (c *StripeClient) GetCheckoutSession(sessionID string) (*stripe.CheckoutSession, error) {
+func (c *StripeClientImpl) GetCheckoutSession(sessionID string) (*stripe.CheckoutSession, error) {
 	return session.Get(sessionID, nil)
 }
 
 // CreatePaymentIntent creates a PaymentIntent for client-side confirmation
 // Returns the client_secret which is used by the frontend to confirm the payment
-func (c *StripeClient) CreatePaymentIntent(orderID string, amount float64, currency string) (*stripe.PaymentIntent, error) {
+func (c *StripeClientImpl) CreatePaymentIntent(orderID string, amount float64, currency string) (*stripe.PaymentIntent, error) {
 	// Stripe expects amount in cents (smallest currency unit)
 	amountInCents := int64(amount * 100)
 
@@ -99,7 +108,7 @@ func (c *StripeClient) CreatePaymentIntent(orderID string, amount float64, curre
 
 // ConfirmPaymentIntent confirms a payment intent with a payment method
 // This is used for server-side confirmation (testing/sandbox)
-func (c *StripeClient) ConfirmPaymentIntent(paymentIntentID string, paymentMethodID string) (*stripe.PaymentIntent, error) {
+func (c *StripeClientImpl) ConfirmPaymentIntent(paymentIntentID string, paymentMethodID string) (*stripe.PaymentIntent, error) {
 	params := &stripe.PaymentIntentConfirmParams{
 		PaymentMethod: stripe.String(paymentMethodID),
 	}
@@ -108,13 +117,13 @@ func (c *StripeClient) ConfirmPaymentIntent(paymentIntentID string, paymentMetho
 }
 
 // GetPaymentIntent retrieves a payment intent by ID
-func (c *StripeClient) GetPaymentIntent(paymentIntentID string) (*stripe.PaymentIntent, error) {
+func (c *StripeClientImpl) GetPaymentIntent(paymentIntentID string) (*stripe.PaymentIntent, error) {
 	return paymentintent.Get(paymentIntentID, nil)
 }
 
 // CreateAndConfirmPaymentIntent creates and immediately confirms a payment (for testing)
 // Uses Stripe test payment methods
-func (c *StripeClient) CreateAndConfirmPaymentIntent(orderID string, amount float64, currency string, paymentMethodID string) (*stripe.PaymentIntent, error) {
+func (c *StripeClientImpl) CreateAndConfirmPaymentIntent(orderID string, amount float64, currency string, paymentMethodID string) (*stripe.PaymentIntent, error) {
 	// Stripe expects amount in cents (smallest currency unit)
 	amountInCents := int64(amount * 100)
 

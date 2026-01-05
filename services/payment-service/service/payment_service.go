@@ -15,14 +15,14 @@ import (
 
 type PaymentService struct {
 	repo           repository.PaymentRepository
-	stripeClient   *stripe.StripeClient
-	rabbitMQClient *messaging.RabbitMQClient
+	stripeClient   stripe.StripeClient
+	rabbitMQClient messaging.RabbitmqClient
 }
 
 func NewPaymentService(
 	repo repository.PaymentRepository,
-	stripeClient *stripe.StripeClient,
-	rabbitMQClient *messaging.RabbitMQClient,
+	stripeClient stripe.StripeClient,
+	rabbitMQClient messaging.RabbitmqClient,
 ) *PaymentService {
 	return &PaymentService{
 		repo:           repo,
