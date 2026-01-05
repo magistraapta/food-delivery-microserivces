@@ -233,17 +233,61 @@ All endpoints are accessible via Traefik on port 80:
 
 The payment system uses **Stripe Checkout** for secure payment processing:
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client
+    participant OrderService as Order Service
+    participant RabbitMQ
+    participant PaymentService as Payment Service
+    participant Stripe
+    participant Database as Payment DB
+
+    %% Order Creation
+    Client->>OrderService: POST /api/order (Create Order)
+    OrderService->>RabbitMQ: Publish order.created event
+
+    %% Payment Processing
+    RabbitMQ->>PaymentService: Consume order.created event
+    PaymentService->>Database: Create Payment (status: PENDING)
+    PaymentService->>Stripe: Create Checkout Session
+    Stripe-->>PaymentService: Return Session ID + Checkout URL
+    PaymentService->>Database: Store Checkout Session Info
+    PaymentService->>RabbitMQ: Publish payment.checkout.created event
+
+    %% Client Gets Checkout URL
+    Client->>PaymentService: GET /api/payment/checkout/:orderId
+    PaymentService-->>Client: Return Checkout URL
+
+    %% User Pays on Stripe
+    Client->>Stripe: Redirect to Checkout Page
+    Stripe->>Stripe: User completes payment
+
+    %% Webhook - Success Path
+    Stripe->>PaymentService: Webhook: checkout.session.completed
+    PaymentService->>Database: Update status to SUCCESS
+    PaymentService->>RabbitMQ: Publish payment.success event
+    RabbitMQ->>OrderService: Consume payment.success event
+    OrderService->>OrderService: Update order to CONFIRMED
+
+    %% Alternative: Timeout/Expiry Path
+    Note over Stripe,PaymentService: If session expires (5 min timeout)
+    Stripe-->>PaymentService: Webhook: checkout.session.expired
+    PaymentService->>Database: Update status to EXPIRED
+    PaymentService->>RabbitMQ: Publish payment.failed event
+    RabbitMQ->>OrderService: Consume payment.failed event
+    OrderService->>OrderService: Update order to CANCELLED
 ```
-1. Client creates order → Order Service
-2. Order Service publishes order.created event
-3. Payment Service creates Stripe Checkout Session
-4. Client gets checkout URL from Payment Service
-5. User is redirected to Stripe Checkout page
-6. User completes payment on Stripe
-7. Stripe sends webhook to Payment Service
-8. Payment Service publishes payment.success event
-9. Order Service updates order status to CONFIRMED
-```
+
+### Flow Summary
+
+| Step  | Action                                           | Service                 |
+| ----- | ------------------------------------------------ | ----------------------- |
+| 1-2   | Client creates order, event published            | Order Service           |
+| 3-8   | Payment record created, Stripe session generated | Payment Service         |
+| 9-10  | Client retrieves checkout URL                    | Payment Service         |
+| 11-12 | User completes payment on Stripe                 | Stripe                  |
+| 13-16 | Webhook received, order confirmed                | Payment → Order Service |
 
 ### Payment Endpoints
 
