@@ -1,0 +1,126 @@
+@startuml Food Delivery K8s Architecture
+
+title Food Delivery - Kubernetes Architecture\nNamespace: food-delivery
+
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+
+' External
+actor "Client\n(Browser/Mobile)" as client
+
+' Ingress
+package "Kubernetes Cluster (Minikube)" {
+    
+    component "NGINX Ingress Controller\n(food-delivery-ingress)\n─────────────────\nlocalhost:80" as ingress #LightBlue
+    
+    note right of ingress
+        **Routing Rules:**
+        /api/users/* → user-service:8081
+        /api/foods/* → food-service:8082
+        /api/orders/* → order-service:8083
+        /api/payments/* → payment-service:8084
+    end note
+    
+    package "Services (ClusterIP)" {
+        component "user-service\n:8081" as user_svc #LightGreen
+        component "food-service\n:8082" as food_svc #LightGreen
+        component "order-service\n:8083" as order_svc #LightGreen
+        component "payment-service\n:8084" as payment_svc #LightGreen
+    }
+    
+    package "Deployments" {
+        
+        package "user-service (replicas: 2)" as user_deploy {
+            component "Pod 1" as user_pod1 #PaleGreen
+            component "Pod 2" as user_pod2 #PaleGreen
+        }
+        
+        package "food-service (replicas: 2)" as food_deploy {
+            component "Pod 1" as food_pod1 #PaleGreen
+            component "Pod 2" as food_pod2 #PaleGreen
+        }
+        
+        package "order-service (replicas: 2)" as order_deploy {
+            component "Pod 1" as order_pod1 #PaleGreen
+            component "Pod 2" as order_pod2 #PaleGreen
+        }
+        
+        package "payment-service (replicas: 2)" as payment_deploy {
+            component "Pod 1" as payment_pod1 #PaleGreen
+            component "Pod 2" as payment_pod2 #PaleGreen
+        }
+    }
+    
+    package "Configuration" {
+        component "ConfigMap\nfood-delivery-config\n─────────────────\nSERVICE_URLs\nRABBITMQ_URL" as configmap #Wheat
+        component "Secret\nfood-delivery-secrets\n─────────────────\nJWT_SECRET\nDB_PASSWORD\nSTRIPE_KEYS" as secrets #Pink
+    }
+}
+
+' External Services (Docker)
+package "External Services (Docker)" as docker_services {
+    database "PostgreSQL\nhost.docker.internal:5432\n─────────────────\ngo-user-db\nfood-service-db\norder-service-db\npayment-service-db" as postgres #LightCoral
+    
+    queue "RabbitMQ\nhost.docker.internal:5672\n─────────────────\nAMQP Messaging\nManagement: :15672" as rabbitmq #Orange
+}
+
+' Connections
+client --> ingress : "HTTP localhost:80\n(minikube tunnel)"
+
+ingress --> user_svc : "/api/users/*"
+ingress --> food_svc : "/api/foods/*"
+ingress --> order_svc : "/api/orders/*"
+ingress --> payment_svc : "/api/payments/*"
+
+user_svc --> user_pod1
+user_svc --> user_pod2
+
+food_svc --> food_pod1
+food_svc --> food_pod2
+
+order_svc --> order_pod1
+order_svc --> order_pod2
+
+payment_svc --> payment_pod1
+payment_svc --> payment_pod2
+
+' Database connections
+user_pod1 ..> postgres
+user_pod2 ..> postgres
+food_pod1 ..> postgres
+food_pod2 ..> postgres
+order_pod1 ..> postgres
+order_pod2 ..> postgres
+payment_pod1 ..> postgres
+payment_pod2 ..> postgres
+
+' RabbitMQ connections
+order_pod1 ..> rabbitmq : "AMQP"
+order_pod2 ..> rabbitmq
+payment_pod1 ..> rabbitmq : "AMQP"
+payment_pod2 ..> rabbitmq
+
+' Config injection
+configmap ..> user_deploy : "env vars"
+configmap ..> food_deploy
+configmap ..> order_deploy
+configmap ..> payment_deploy
+secrets ..> user_deploy : "secrets"
+secrets ..> food_deploy
+secrets ..> order_deploy
+secrets ..> payment_deploy
+
+legend right
+    |= Color |= Meaning |
+    | <#LightBlue> | Ingress Controller |
+    | <#LightGreen> | Active Services |
+    | <#PaleGreen> | Running Pods |
+    | <#Wheat> | ConfigMap |
+    | <#Pink> | Secrets |
+    | <#LightCoral> | Database |
+    | <#Orange> | Message Queue |
+endlegend
+
+footer Generated: 2026-01-15 | All 4 services active | RabbitMQ & PostgreSQL running via Docker
+
+@enduml
