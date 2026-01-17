@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: food-delivery-ingress
+  namespace: food-delivery
+  annotations:
+    # NGINX Ingress Controller annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    # Using "-" without host allows access via any hostname (localhost, IP, etc.)
+    - http:
+        paths:
+          # User Service: /api/users/*
+          - path: /api/users(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8081
+
+          # Food Service: /api/foods/*
+          - path: /api/foods(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: food-service
+                port:
+                  number: 8082
+
+          # Order Service: /api/orders/*
+          - path: /api/orders(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: order-service
+                port:
+                  number: 8083
+
+          # Payment Service: /api/payments/*
+          - path: /api/payments(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: payment-service
+                port:
+                  number: 8084

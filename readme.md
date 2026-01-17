@@ -305,12 +305,16 @@ If payment is not completed within **5 minutes**, the order is automatically can
 
 - Every service need to validate the request from client
 
+## Kubernetes
+
+To run the application in kuberentes you can just apply all the YAML files on k8s folder. But make sure to run postgresql and rabbitmq locally since it is not running on kubernetes.
+
 ## To-do List
 
 - [x] Return Stripe Payment URL
-- [ ] Setup Unit test
+- [x] Setup Unit test
 - [ ] Setup Integration test
-- [ ] Setup Kubernetes
+- [x] Setup Kubernetes
 - [ ] Setup CI/CD
 - [ ] Setup S3 from minio
 

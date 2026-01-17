@@ -1,0 +1,169 @@
+@startuml Food Delivery Kubernetes Architecture
+
+!define BLUE #0066CC
+!define GREEN #28A745
+!define ORANGE #FD7E14
+!define RED #DC3545
+!define PURPLE #6F42C1
+!define CYAN #17A2B8
+
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontName Inter
+skinparam shadowing false
+skinparam roundCorner 8
+
+skinparam rectangle {
+    BackgroundColor white
+    BorderColor #DEE2E6
+}
+
+skinparam component {
+    BackgroundColor #E7F1FF
+    BorderColor BLUE
+    FontColor #212529
+}
+
+skinparam database {
+    BackgroundColor #FFF3CD
+    BorderColor ORANGE
+}
+
+skinparam queue {
+    BackgroundColor #FFE5D0
+    BorderColor ORANGE
+}
+
+title <size:20>**Food Delivery - Kubernetes Architecture**</size>\n<size:12>Namespace: food-delivery | Cluster: Minikube</size>
+
+' ============================================
+' EXTERNAL LAYER
+' ============================================
+
+actor "👤 Client\n(Browser/Mobile)" as client #white
+
+' ============================================
+' KUBERNETES CLUSTER
+' ============================================
+
+rectangle "☸️ **Kubernetes Cluster (Minikube)**" as k8s_cluster {
+    
+    ' INGRESS LAYER
+    rectangle "🌐 **Ingress Layer**" as ingress_layer {
+        component "**NGINX Ingress Controller**\nfood-delivery-ingress\n━━━━━━━━━━━━━━━━━━━━━\n🔀 Path-based Routing\n📍 localhost:80" as ingress #LightBlue
+    }
+    
+    note bottom of ingress
+        **API Routes:**
+        ├─ /api/users/*   → user-service:8081
+        ├─ /api/foods/*   → food-service:8082  
+        ├─ /api/orders/*  → order-service:8083
+        └─ /api/payments/* → payment-service:8084
+    end note
+    
+    ' SERVICES LAYER
+    rectangle "🔌 **Services Layer** (ClusterIP)" as services_layer {
+        component "user-service\n:8081" as user_svc GREEN
+        component "food-service\n:8082" as food_svc GREEN
+        component "order-service\n:8083" as order_svc GREEN  
+        component "payment-service\n:8084" as payment_svc GREEN
+    }
+    
+    ' DEPLOYMENTS LAYER
+    rectangle "📦 **Deployments Layer**" as deployments_layer {
+        
+        rectangle "**user-service**\nreplicas: 2" as user_deploy #E8F5E9 {
+            component "🐳 Pod" as user_pod1 #C8E6C9
+            component "🐳 Pod" as user_pod2 #C8E6C9
+        }
+        
+        rectangle "**food-service**\nreplicas: 2" as food_deploy #E8F5E9 {
+            component "🐳 Pod" as food_pod1 #C8E6C9
+            component "🐳 Pod" as food_pod2 #C8E6C9
+        }
+        
+        rectangle "**order-service**\nreplicas: 2" as order_deploy #E3F2FD {
+            component "🐳 Pod" as order_pod1 #BBDEFB
+            component "🐳 Pod" as order_pod2 #BBDEFB
+        }
+        
+        rectangle "**payment-service**\nreplicas: 2" as payment_deploy #E3F2FD {
+            component "🐳 Pod" as payment_pod1 #BBDEFB
+            component "🐳 Pod" as payment_pod2 #BBDEFB
+        }
+    }
+    
+    ' CONFIGURATION LAYER
+    rectangle "⚙️ **Configuration**" as config_layer {
+        component "📋 **ConfigMap**\nfood-delivery-config\n━━━━━━━━━━━━━━━━\nUSER_SERVICE_URL\nFOOD_SERVICE_URL\nORDER_SERVICE_URL\nPAYMENT_SERVICE_URL\nRABBITMQ_URL" as configmap #FFF9C4
+        
+        component "🔐 **Secret**\nfood-delivery-secrets\n━━━━━━━━━━━━━━━━\nJWT_SECRET\nDATABASE_PASSWORD\nSTRIPE_SECRET_KEY\nSTRIPE_WEBHOOK_SECRET" as secrets #FFCDD2
+    }
+}
+
+' ============================================
+' EXTERNAL SERVICES (Docker)
+' ============================================
+
+rectangle "🐳 **External Services (Docker)**" as docker_layer {
+    database "🐘 **PostgreSQL**\nhost.docker.internal:5432\n━━━━━━━━━━━━━━━━━━━\n📁 go-user-db\n📁 food-service-db\n📁 order-service-db\n📁 payment-service-db" as postgres #FFF3CD
+    
+    queue "🐰 **RabbitMQ**\nhost.docker.internal\n━━━━━━━━━━━━━━━━━━━\n📬 AMQP: 5672\n🖥️ Management: 15672\n👤 guest:guest" as rabbitmq #FFE0B2
+}
+
+' ============================================
+' CONNECTIONS
+' ============================================
+
+' Client to Ingress
+client -[#0066CC,thickness=2]-> ingress : "HTTP :80\nminikube tunnel"
+
+' Ingress to Services
+ingress -[#28A745]-> user_svc
+ingress -[#28A745]-> food_svc
+ingress -[#28A745]-> order_svc
+ingress -[#28A745]-> payment_svc
+
+' Services to Pods
+user_svc -[#28A745]-> user_pod1
+user_svc -[#28A745]-> user_pod2
+food_svc -[#28A745]-> food_pod1
+food_svc -[#28A745]-> food_pod2
+order_svc -[#28A745]-> order_pod1
+order_svc -[#28A745]-> order_pod2
+payment_svc -[#28A745]-> payment_pod1
+payment_svc -[#28A745]-> payment_pod2
+
+' Database Connections
+user_pod1 .[#FD7E14,dashed].> postgres
+food_pod1 .[#FD7E14,dashed].> postgres
+order_pod1 .[#FD7E14,dashed].> postgres
+payment_pod1 .[#FD7E14,dashed].> postgres
+
+' RabbitMQ Connections (only order and payment)
+order_pod1 .[#DC3545,dashed].> rabbitmq : "AMQP"
+payment_pod1 .[#DC3545,dashed].> rabbitmq : "AMQP"
+
+' Config Injection
+configmap .[#6F42C1,dotted].> deployments_layer
+secrets .[#6F42C1,dotted].> deployments_layer
+
+' ============================================
+' LEGEND
+' ============================================
+
+legend right
+    |<#E7F1FF>     | Kubernetes Components |
+    |<#C8E6C9>     | Basic Service Pods |
+    |<#BBDEFB>     | Event-Driven Pods (RabbitMQ) |
+    |<#FFF9C4>     | ConfigMap |
+    |<#FFCDD2>     | Secrets |
+    |<#FFF3CD>     | PostgreSQL Database |
+    |<#FFE0B2>     | RabbitMQ Message Queue |
+    |<#28A745> ─── | Service Traffic |
+    |<#FD7E14> - - | Database Connection |
+    |<#DC3545> - - | Message Queue Connection |
+endlegend
+
+footer \n📅 Generated: 2026-01-15 | 🏃 8 Pods Running | 4 Services Active | 📊 minikube tunnel required
+
+@enduml
