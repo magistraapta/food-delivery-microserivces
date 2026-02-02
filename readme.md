@@ -307,7 +307,31 @@ If payment is not completed within **5 minutes**, the order is automatically can
 
 ## Kubernetes
 
-To run the application in kuberentes you can just apply all the YAML files on k8s folder. But make sure to run postgresql and rabbitmq locally since it is not running on kubernetes.
+To run the application in Kubernetes you can apply the YAML files in the `k8s/` folder.
+
+### Minikube (local cluster)
+
+Minikube uses its own Docker daemon, so images built on your host are not visible to the cluster. Build images **inside** minikube before applying manifests:
+
+```bash
+# 1. Start minikube (with ingress addon enabled)
+minikube start
+
+# 2. Build app images inside minikube's Docker daemon (required once per image change)
+./build-images-minikube.sh
+
+# 3. Apply manifests
+./run-k8s.sh
+
+# 4. (Optional) Expose ingress locally
+minikube tunnel
+```
+
+Without step 2, deployments will stay in `ImagePullBackOff` or `ErrImageNeverPull` because `food-service:latest`, `order-service:latest`, etc. do not exist in minikube’s image cache.
+
+### Without Minikube
+
+If you use a different cluster (e.g. kind, cloud) and push images to a registry, update the deployment `image` fields to your registry URLs and set `imagePullPolicy: IfNotPresent` (or remove it).
 
 ## To-do List
 
