@@ -7,14 +7,14 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 go build -o /bin/server .
+RUN CGO_ENABLED=0 go build -p 1 -o /bin/server .
 
 # Final stage
 FROM alpine:latest AS final
 
 RUN apk --no-cache add ca-certificates tzdata && update-ca-certificates
 
-ARG UID=10001
+ARG UID=10001 
 RUN adduser \
     --disabled-password \
     --gecos "" \
