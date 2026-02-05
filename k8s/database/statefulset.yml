@@ -8,7 +8,7 @@ spec:
     matchLabels:
       app: postgres-database
   serviceName: postgres-service
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       labels:
@@ -17,12 +17,26 @@ spec:
       containers:
       - name: postgres-database
         image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: food-delivery-secrets
+              key: POSTGRES_PASSWORD
         ports:
         - containerPort: 5432
           name: postgres
         volumeMounts:
         - name: postgres-data
           mountPath: /var/lib/postgresql/data
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: init-script
+        configMap:
+          name: postgres-init
   volumeClaimTemplates:
   - metadata:
       name: postgres-data
@@ -31,3 +45,4 @@ spec:
       resources:
         requests:
           storage: 1Gi
+        

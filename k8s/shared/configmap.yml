@@ -8,4 +8,4 @@ data:
   FOOD_SERVICE_URL: "http://food-service:8082"
   ORDER_SERVICE_URL: "http://order-service:8083"
   PAYMENT_SERVICE_URL: "http://payment-service:8084"
-  RABBITMQ_URL: "amqp://guest:guest@host.docker.internal:5672/"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"

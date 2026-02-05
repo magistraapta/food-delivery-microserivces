@@ -22,3 +22,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Cursor
+.cursor/

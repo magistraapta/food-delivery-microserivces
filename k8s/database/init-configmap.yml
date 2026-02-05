@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: food-delivery
+data:
+  init-databases.sql: |
+    CREATE DATABASE "food-service-db";
+    CREATE DATABASE "order-service-db";
+    CREATE DATABASE "go-user-db";
+    CREATE DATABASE "payment-service-db";

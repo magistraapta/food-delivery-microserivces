@@ -26,7 +26,7 @@ spec:
                 name: food-delivery-secrets
           env:
             - name: DB_URL
-              value: "postgres://postgres:postgres@host.docker.internal:5432/food-service-db?sslmode=disable"
+              value: "postgres://postgres:postgres@postgres-service:5432/food-service-db?sslmode=disable"
           resources:
             requests:
               memory: "128Mi"

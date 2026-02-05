@@ -29,7 +29,9 @@ spec:
                 name: food-delivery-secrets
           env:
             - name: DB_URL
-              value: "postgres://postgres:postgres@host.docker.internal:5432/payment-service-db"
+              value: "postgres://postgres:postgres@postgres-service:5432/payment-service-db?sslmode=disable"
+            - name: RABBITMQ_URL
+              value: "amqp://guest:guest@rabbitmq:5672/"
 
           resources:
             requests:
