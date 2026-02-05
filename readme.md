@@ -321,7 +321,7 @@ minikube start
 ./build-images-minikube.sh
 
 # 3. Apply manifests
-./run-k8s.sh
+./apply-k8s.sh
 
 # 4. (Optional) Expose ingress locally
 minikube tunnel
@@ -332,6 +332,18 @@ Without step 2, deployments will stay in `ImagePullBackOff` or `ErrImageNeverPul
 ### Without Minikube
 
 If you use a different cluster (e.g. kind, cloud) and push images to a registry, update the deployment `image` fields to your registry URLs and set `imagePullPolicy: IfNotPresent` (or remove it).
+
+### Troubleshooting
+
+**"field is immutable" when reapplying ingress-nginx**
+
+If you install the NGINX Ingress controller from the official manifest (e.g. `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.1/deploy/static/provider/cloud/deploy.yaml`) and later re-apply it, the admission webhook Jobs (`ingress-nginx-admission-create`, `ingress-nginx-admission-patch`) fail because Job pod templates are immutable. Fix by deleting those Jobs once; the next apply will recreate them and the webhook cert is already in a Secret:
+
+```bash
+kubectl delete job ingress-nginx-admission-create ingress-nginx-admission-patch -n ingress-nginx --ignore-not-found
+```
+
+Then re-run your apply.
 
 ## To-do List
 
