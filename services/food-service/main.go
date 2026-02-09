@@ -8,7 +8,6 @@ import (
 	"food-service/repository"
 	"food-service/service"
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -74,5 +73,5 @@ func main() {
 		})
 	})
 
-	router.Run(os.Getenv("PORT"))
+	router.Run(":8082")
 }

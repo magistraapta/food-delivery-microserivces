@@ -2,11 +2,8 @@ package config
 
 import "github.com/joho/godotenv"
 
-func LoadEnv() error {
-	err := godotenv.Load(".env")
-	if err != nil {
-		return err
-	}
-
+func LoadConfig() error {
+	// .env is optional when running in K8s/containers (env is injected via ConfigMap/Secret)
+	_ = godotenv.Load(".env")
 	return nil
 }

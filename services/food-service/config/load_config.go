@@ -1,16 +1,11 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/joho/godotenv"
 )
 
 func LoadConfig() error {
-	err := godotenv.Load(".env")
-	if err != nil {
-		return fmt.Errorf("failed to load .env file: %v", err)
-	}
-
+	// .env is optional when running in K8s/containers (env is injected via ConfigMap/Secret)
+	_ = godotenv.Load(".env")
 	return nil
 }

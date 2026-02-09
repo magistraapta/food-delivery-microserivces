@@ -1,41 +1,64 @@
 # Food Delivery Microservice
+Food-delivery is a HTTP-based web app that simulates food delivery service such as Doordash, Gojek Food, or Uber Food.
 
-a microservice architecture for food delivery system built with Go.
+This application is created to simulate the development process of microservice project from running on Kubernetes cluster and AWS cloud service.
+
+If you find this application helpful, don't forget to give a star! ⭐️
 
 ## Architecture
 
-![Architecture](./architecture-diagram.png)
+```mermaid
+flowchart LR
+  subgraph Client
+    C[Client]
+  end
 
-## Features
+  subgraph Gateway
+    T[Traefik]
+  end
 
-- User Service
+  subgraph Services
+    A[User Service]
+    F[Food Service]
+    O[Order Service]
+    P[Payment Service]
+  end
 
-  - Register
-  - Login
-  - Get User
+  subgraph Messaging
+    R[RabbitMQ]
+  end
 
-- Order Service
+  subgraph Data
+    DB[(PostgreSQL)]
+  end
 
-  - Create Order
-  - Get Order
+  C -->|send request| T
+  T -->|validate request| A
+  A -->|send header| T
+  T -->|browse restaurant/food| F
+  T -->|create order| O
+  O -->|check quantity| F
+  O -->|order event| R
+  R -->|order event| P
+  P -->|payment success/fail| R
+  R -->|payment success/fail| O
+  A --> DB
+  F --> DB
+  O --> DB
+  P --> DB
+```
 
-- Payment Service
+## Services
 
-  - Create Payment
-  - Get Payment
-
-- Food Service
-
-  - Create Food
-  - Get Food
-
-- Delivery Service
-  - Get delivery status
-  - Update delivery status
-
-## Service Structure
-
-Each service is using layered architecture that contains repository, service, and controller layer.
+| Service         | Language   | Description |
+| --------------- | ---------- | ----------- |
+| user-service    | Go         | Manages user accounts and authentication. Register, login, get user. Signs JWTs used for authentication by other services. |
+| food-service    | Go         | Browse restaurants and food, create food. Exposes restaurant and menu data. Order service calls it to check quantity. |
+| order-service   | Go         | Creates and retrieves orders. Publishes order events to RabbitMQ; consumes payment success/fail events to update order status. |
+| payment-service | Go         | Handles payments via Stripe Checkout. Consumes order events from RabbitMQ, creates checkout sessions, publishes payment success/fail events. |
+| traefik         | Go         | API gateway and reverse proxy. Routes client requests to services and exposes dashboard. |
+| rabbitmq        | Erlang     | Message broker for asynchronous events between order and payment services. |
+| PostgreSQL      | SQL        | Databases per service (user-service-db, food-service-db, order-service-db, payment-service-db). |
 
 ## Tools
 
@@ -279,16 +302,6 @@ sequenceDiagram
     OrderService->>OrderService: Update order to CANCELLED
 ```
 
-### Flow Summary
-
-| Step  | Action                                           | Service                 |
-| ----- | ------------------------------------------------ | ----------------------- |
-| 1-2   | Client creates order, event published            | Order Service           |
-| 3-8   | Payment record created, Stripe session generated | Payment Service         |
-| 9-10  | Client retrieves checkout URL                    | Payment Service         |
-| 11-12 | User completes payment on Stripe                 | Stripe                  |
-| 13-16 | Webhook received, order confirmed                | Payment → Order Service |
-
 ### Payment Endpoints
 
 | Endpoint                         | Method | Description                          |
@@ -301,22 +314,57 @@ sequenceDiagram
 
 If payment is not completed within **5 minutes**, the order is automatically cancelled.
 
-## Cons
-
-- Every service need to validate the request from client
 
 ## Kubernetes
 
-To run the application in kuberentes you can just apply all the YAML files on k8s folder. But make sure to run postgresql and rabbitmq locally since it is not running on kubernetes.
+To run the application in Kubernetes you can apply the YAML files in the `k8s/` folder.
+![](/images/kubernetes-dashboard.png)
+
+
+### Colima (local cluster)
+
+Colima uses its own Docker daemon, so images built on your host are not visible to the cluster. Build images using the Colima Docker context before applying manifests:
+
+```bash
+# 1. Start Colima with Kubernetes
+colima start --with-kubernetes
+
+# 2. Use Colima's Docker context and build app images (required once per image change)
+docker context use colima
+./build-colima.sh
+
+# 3. Apply manifests
+./apply-k8s.sh
+
+# 4. (Optional) Expose ingress locally
+colima tunnel
+```
+
+Without step 2, deployments will stay in `ImagePullBackOff` or `ErrImageNeverPull` because `food-service:latest`, `order-service:latest`, etc. do not exist in Colima's image cache.
+
+### Without Colima
+
+If you use a different cluster (e.g. kind, minikube, cloud) and push images to a registry, update the deployment `image` fields to your registry URLs and set `imagePullPolicy: IfNotPresent` (or remove it).
+
+### Troubleshooting
+
+**"field is immutable" when reapplying ingress-nginx**
+
+If you install the NGINX Ingress controller from the official manifest (e.g. `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.1/deploy/static/provider/cloud/deploy.yaml`) and later re-apply it, the admission webhook Jobs (`ingress-nginx-admission-create`, `ingress-nginx-admission-patch`) fail because Job pod templates are immutable. Fix by deleting those Jobs once; the next apply will recreate them and the webhook cert is already in a Secret:
+
+```bash
+kubectl delete job ingress-nginx-admission-create ingress-nginx-admission-patch -n ingress-nginx --ignore-not-found
+```
+
+Then re-run your apply.
 
 ## To-do List
 
 - [x] Return Stripe Payment URL
 - [x] Setup Unit test
-- [ ] Setup Integration test
 - [x] Setup Kubernetes
 - [ ] Setup CI/CD
-- [ ] Setup S3 from minio
+- [ ] Deploy on AWS
 
 ## Contact
 

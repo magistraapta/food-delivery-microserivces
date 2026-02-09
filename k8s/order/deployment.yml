@@ -26,7 +26,9 @@ spec:
                 name: food-delivery-secrets
           env:
             - name: DB_URL
-              value: "postgres://postgres:postgres@host.docker.internal:5432/order-service-db"
+              value: "postgres://postgres:postgres@postgres-service:5432/order-service-db"
+            - name: RABBITMQ_URL
+              value: "amqp://guest:guest@rabbitmq:5672/"
 
           resources:
             requests:
@@ -35,3 +37,15 @@ spec:
             limits:
               memory: "128Mi"
               cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            initialDelaySeconds: 30
+            periodSeconds: 10

@@ -29,7 +29,7 @@ spec:
                 name: food-delivery-secrets
           env:
             - name: DB_URL
-              value: "postgres://postgres:postgres@host.docker.internal:5432/go-user-db"
+              value: "postgres://postgres:postgres@postgres-service:5432/go-user-db?sslmode=disable"
           resources:
             requests:
               memory: "64Mi"

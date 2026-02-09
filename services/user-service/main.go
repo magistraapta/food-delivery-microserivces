@@ -16,7 +16,7 @@ import (
 
 func main() {
 
-	err := config.LoadEnv()
+	err := config.LoadConfig()
 
 	if err != nil {
 		log.Fatal("Failed to load config: ", err)
@@ -61,6 +61,6 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})
 
-	router.Run(os.Getenv("PORT"))
+	router.Run(":8081")
 
 }
