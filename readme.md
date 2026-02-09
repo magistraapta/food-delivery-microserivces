@@ -318,30 +318,33 @@ If payment is not completed within **5 minutes**, the order is automatically can
 ## Kubernetes
 
 To run the application in Kubernetes you can apply the YAML files in the `k8s/` folder.
+![](/images/kubernetes-dashboard.png)
 
-### Minikube (local cluster)
 
-Minikube uses its own Docker daemon, so images built on your host are not visible to the cluster. Build images **inside** minikube before applying manifests:
+### Colima (local cluster)
+
+Colima uses its own Docker daemon, so images built on your host are not visible to the cluster. Build images using the Colima Docker context before applying manifests:
 
 ```bash
-# 1. Start minikube (with ingress addon enabled)
-minikube start
+# 1. Start Colima with Kubernetes
+colima start --with-kubernetes
 
-# 2. Build app images inside minikube's Docker daemon (required once per image change)
-./build-images-minikube.sh
+# 2. Use Colima's Docker context and build app images (required once per image change)
+docker context use colima
+./build-colima.sh
 
 # 3. Apply manifests
 ./apply-k8s.sh
 
 # 4. (Optional) Expose ingress locally
-minikube tunnel
+colima tunnel
 ```
 
-Without step 2, deployments will stay in `ImagePullBackOff` or `ErrImageNeverPull` because `food-service:latest`, `order-service:latest`, etc. do not exist in minikube’s image cache.
+Without step 2, deployments will stay in `ImagePullBackOff` or `ErrImageNeverPull` because `food-service:latest`, `order-service:latest`, etc. do not exist in Colima's image cache.
 
-### Without Minikube
+### Without Colima
 
-If you use a different cluster (e.g. kind, cloud) and push images to a registry, update the deployment `image` fields to your registry URLs and set `imagePullPolicy: IfNotPresent` (or remove it).
+If you use a different cluster (e.g. kind, minikube, cloud) and push images to a registry, update the deployment `image` fields to your registry URLs and set `imagePullPolicy: IfNotPresent` (or remove it).
 
 ### Troubleshooting
 
