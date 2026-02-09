@@ -5,6 +5,31 @@ This application is created to simulate the development process of microservice 
 
 If you find this application helpful, don't forget to give a star! ⭐️
 
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Services](#services)
+- [Tools](#tools)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Quick Start with Makefile](#quick-start-with-makefile)
+  - [Running with Docker Compose (Recommended)](#running-with-docker-compose-recommended)
+  - [Running Locally (Development Mode)](#running-locally-development-mode)
+  - [Build & Test Commands](#build--test-commands)
+  - [Utility Commands](#utility-commands)
+  - [Makefile Commands Reference](#makefile-commands-reference)
+- [API Endpoints](#api-endpoints)
+  - [Direct Access (Without Traefik)](#direct-access-without-traefik)
+- [Payment Flow](#payment-flow)
+  - [Payment Endpoints](#payment-endpoints)
+  - [Payment Timeout](#payment-timeout)
+- [Kubernetes](#kubernetes)
+  - [Colima (local cluster)](#colima-local-cluster)
+  - [Without Colima](#without-colima)
+  - [Troubleshooting](#troubleshooting)
+- [To-do List](#to-do-list)
+- [Contact](#contact)
+
 ## Architecture
 
 ```mermaid
