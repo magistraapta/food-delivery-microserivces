@@ -371,6 +371,10 @@ Without step 2, deployments will stay in `ImagePullBackOff` or `ErrImageNeverPul
 
 If you use a different cluster (e.g. kind, minikube, cloud) and push images to a registry, update the deployment `image` fields to your registry URLs and set `imagePullPolicy: IfNotPresent` (or remove it).
 
+### Monitoring
+Monitoring the Kubernetes cluster using kube-prometheus-stack
+![monitoring](/images/monitoring.png)
+
 ### Troubleshooting
 
 **"field is immutable" when reapplying ingress-nginx**

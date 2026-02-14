@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: food-service
+  namespace: food-delivery
+  labels:
+    app: food-service
+spec:
+  selector:
+    matchLabels:
+      app: food-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

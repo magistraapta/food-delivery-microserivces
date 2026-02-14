@@ -1,0 +1,22 @@
+namespaceOverride: "monitoring"  # Override the namespace for all components
+prometheus:
+  prometheusSpec:
+    retention: 14d                      # Retention period for Prometheus data.
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+grafana:
+  adminPassword: "admin"        # Set the Grafana admin password.
